@@ -8,11 +8,12 @@ export default function Header() {
       <Link href="/">
         <Image src={Logo} alt="Church of God" width={180} height={40} />
       </Link>
+
       <nav>
-        <Link href="/marathon/viewer" className="text-primary font-semibold mr-4">
+        <Link href="/viewer" className="text-primary font-semibold mr-4">
           View Marathon
         </Link>
-        <Link href="/marathon/stage" className="text-secondary font-semibold">
+        <Link href="/stage" className="text-secondary font-semibold">
           Stage Login
         </Link>
       </nav>
