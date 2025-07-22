@@ -11,16 +11,12 @@ export default function HomePage() {
         Watch live as readers from our church family take turns sharing the Word of God day and night. Open to all. No sign-in needed to watch.
       </p>
       <div className="flex flex-wrap justify-center gap-4">
-        <Link href="/viewer">
+        <Link href="/bible-marathon">
           <button className="px-6 py-3 bg-brandBlue text-white text-lg font-semibold rounded-full shadow-md hover:bg-brandBlue/80 transition-transform duration-200 hover:scale-105">
             View Live Stream
           </button>
         </Link>
-        <Link href="/stage">
-          <button className="px-6 py-3 bg-orange-500 text-white text-lg font-semibold rounded-full shadow-md hover:bg-orange-400 transition-transform duration-200 hover:scale-105">
-            Reader Staging
-          </button>
-        </Link>
+
       </div>
     </div>
   )
