@@ -1,12 +1,27 @@
+import { useState } from "react";
+
 export function GuestJoinModal({
-  name,
+  name: initialName,
   onClose,
-  setName,
+  handleViewerRegistration,
 }: {
-  name: string;
+  name: string | undefined | null;
   onClose: () => void;
-  setName: (name: string) => void;
+  handleViewerRegistration: (name: string) => void;
 }) {
+  const [name, setName] = useState(initialName || "");
+
+  const getGuestName = async () => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stream/guest-name`);
+    const { name: guestName } = await res.json();
+    return guestName;
+  };
+
+  const handleSubmit = async () => {
+    const finalName = name.trim() || (await getGuestName());
+    handleViewerRegistration(finalName);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
@@ -27,9 +42,7 @@ export function GuestJoinModal({
             Cancel
           </button>
           <button
-            onClick={() => {
-              onClose();
-            }}
+            onClick={handleSubmit}
             className="ml-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Submit

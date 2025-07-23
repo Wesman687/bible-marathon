@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createLocalAudioTrack, createLocalVideoTrack, RemoteParticipant, RemoteTrackPublication, Room, Track } from 'livekit-client';
 import { GuestJoinModal } from './GuestJoinModal';
 import { signInWithGoogle } from '@/lib/firebase.auth';
@@ -14,7 +14,7 @@ export function ViewerInterface() {
     const [isConnected, setIsConnected] = useState(false);
     const [joinedStream, setJoinedStream] = useState<boolean>(false)
     const peerRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
-
+    const hasConnected = useRef(false);
 
     const raiseHand = async () => {
         const identity = roomRef?.current?.localParticipant.identity
@@ -68,29 +68,7 @@ export function ViewerInterface() {
         videoTrack.attach(videoEl);
         setJoinedStream(true)
     };
-    const handleViewerRegistration = async () => {
-        let identity = roomRef.current?.localParticipant.identity;
 
-        // If not connected yet, connect and wait for identity
-        if (!identity) {
-            await connectAsViewer();
-            identity = roomRef.current?.localParticipant.identity;
-            console.log("identity: ", identity);
-        }   
-
-        if (!displayName) {
-            console.error("displayName");
-            return;
-        }
-
-        const email = user?.email || "guest@email.com";
-
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stream/register-viewer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identity, displayName, email }),
-        });
-    };
 
     const handleTrackSubscribed = (
         track: Track,
@@ -117,15 +95,31 @@ export function ViewerInterface() {
             audioEl.play().catch(() => {
                 console.warn('Audio playback blocked until user interacts.');
             });
-        }
+        }        
     };
-useEffect(() => {
-    if (displayName) {
-        handleViewerRegistration();
+const handleViewerRegistration = async (providedName: string) => {
+    let identity = roomRef.current?.localParticipant.identity;
+
+    if (!identity) {
+        await connectAsViewer();
+        identity = roomRef.current?.localParticipant.identity;
+        console.log("identity after reconnect:", identity);
     }
-}, [displayName]);
+
+
+
+    const email = user?.email || "guest@email.com";
+
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stream/register-viewer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity, displayName:providedName, email }),
+    });
+}
 
     const connectAsViewer = async () => {
+        if (hasConnected.current) return;
+        hasConnected.current = true;
         const email = user?.email || "guest@email.com"
         const useName = displayName || user?.displayName || "Guest"
         try {
@@ -135,8 +129,7 @@ useEffect(() => {
                 body: JSON.stringify({ displayName: useName, email }),
             });
 
-            const { token, name } = await res.json();
-            setName(name)
+            const { token } = await res.json();
             const room = new Room();
             roomRef.current = room;
 
@@ -169,6 +162,7 @@ useEffect(() => {
 
 
     const disconnectViewer = () => {
+        hasConnected.current = false;
         roomRef.current?.disconnect();
         roomRef.current = null;
         peerRefs.current.clear();
@@ -179,7 +173,9 @@ useEffect(() => {
 
     const toggleConnection = () => {
         if (isConnected) {
+        hasConnected.current = false;
             disconnectViewer();
+            
         } else {
             connectAsViewer();
         }
@@ -194,7 +190,7 @@ useEffect(() => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stream/can-join/${identity}`);
             const data = await res.json();
 
-            if (data.canJoin && !data.isJoined) {
+            if (data.canJoin && !joinedStream) {
               clearInterval(interval);
               await joinStream(identity);
             }
@@ -226,7 +222,7 @@ useEffect(() => {
             <p>You are currently watching the live broadcast.</p>
             <div
                 id="viewer-grid"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4"
+                className="w-[85vw] flex align-center justify-center" 
             >
                 {joinedStream && (
                     <video
@@ -300,8 +296,8 @@ useEffect(() => {
             )}
             {showModal && (
                 <GuestJoinModal
-                    name={user?.displayName || ""}
-                    setName={setName}
+                    name={user?.displayName}
+                    handleViewerRegistration={handleViewerRegistration}
                     onClose={() => {
                         setShowModal(false)
                 }}
