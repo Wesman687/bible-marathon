@@ -7,19 +7,21 @@ export function GuestJoinModal({
 }: {
   name: string | undefined | null;
   onClose: () => void;
-  handleViewerRegistration: (name: string) => void;
+  handleViewerRegistration: (name: string, isHost: boolean) => void;
 }) {
   const [name, setName] = useState(initialName || "");
-
+  const [isHost, setIsHost] = useState(false);
   const getGuestName = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stream/guest-name`);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/stream/guest-name`
+    );
     const { name: guestName } = await res.json();
     return guestName;
   };
 
   const handleSubmit = async () => {
     const finalName = name.trim() || (await getGuestName());
-    handleViewerRegistration(finalName);
+    handleViewerRegistration(finalName, isHost);
     onClose();
   };
 
@@ -34,6 +36,16 @@ export function GuestJoinModal({
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
         />
+
+        <label className="flex items-center space-x-2 mb-3">
+          <input
+            type="checkbox"
+            checked={isHost}
+            onChange={() => setIsHost(!isHost)}
+          />
+          <span>Join as host</span>
+        </label>
+
         <div className="flex justify-end">
           <button
             onClick={onClose}
